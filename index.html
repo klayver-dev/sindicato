@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animação do Cadastro de Associado - ASCAPFLOR</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              50: '#f2f8f3',
+              100: '#e1efe3',
+              200: '#c5e0cb',
+              500: '#3d824d',
+              600: '#2d6a3c',
+              700: '#23532f',
+              800: '#1c4226',
+              900: '#173620',
+            },
+            caparao: {
+              gold: '#D4AF37',
+              earth: '#8B5A2B',
+              leaf: '#2D5A27',
+              soft: '#F4F7F4'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 4s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'card-flip': 'cardFlip 0.8s ease-out forwards',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 10px rgba(45, 90, 39, 0.2)' },
+              '100%': { boxShadow: '0 0 25px rgba(45, 90, 39, 0.6)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at top right, #e8f2e9, #f4f7f4, #e1efe3);
+      min-height: 100vh;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(45, 90, 39, 0.15);
+      box-shadow: 0 12px 32px -8px rgba(28, 66, 38, 0.1);
+    }
+
+    .step-card {
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .step-card.active {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      display: block;
+    }
+
+    .step-card.inactive-left {
+      opacity: 0;
+      transform: translateX(-40px) scale(0.95);
+      display: none;
+    }
+
+    .step-card.inactive-right {
+      opacity: 0;
+      transform: translateX(40px) scale(0.95);
+      display: none;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2d6a3c;
+      border-radius: 4px;
+    }
+
+    .id-card-hologram {
+      background: linear-gradient(135deg, #1c4226 0%, #2D5A27 50%, #0f2b17 100%);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 0 15px rgba(212, 175, 55, 0.3);
+    }
+  </style>
+</head>
+<body class="text-slate-800 p-3 sm:p-6 flex flex-col items-center justify-center min-h-screen">
+
+  <div class="w-full max-w-4xl mb-6 text-center">
+    <div class="inline-flex items-center gap-2 bg-forest-100 border border-forest-200 text-forest-800 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-3 shadow-sm">
+      <i data-lucide="sprout" class="w-4 h-4 text-forest-600"></i>
+      <span>Jornada de Acolhimento Canábico Medicinal</span>
+    </div>
+    <h1 class="text-2xl sm:text-4xl font-extrabold text-forest-900 tracking-tight">
+      ASCAPFLOR <span class="text-forest-600 font-normal">| Caparaó</span>
+    </h1>
+    <p class="text-slate-600 text-xs sm:text-base mt-1 max-w-xl mx-auto">
+      Demonstração animada do processo interativo de acolhimento e cadastro do novo associado.
+    </p>
+
+    <!-- Controls Bar -->
+    <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+      <button id="btnAutoplay" onclick="toggleAutoplay()" class="bg-forest-700 hover:bg-forest-800 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all transform hover:scale-105">
+        <i data-lucide="play" id="iconPlay" class="w-4 h-4"></i>
+        <span id="textPlay">Iniciar Demonstração Automática</span>
+      </button>
+      <button onclick="resetWizard()" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-medium px-3 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-all">
+        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        <span>Reiniciar</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="w-full max-w-4xl glass-card rounded-3xl p-4 sm:p-8 relative overflow-hidden">
+    
+    <!-- Step Progress Bar Header -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-2">
+        <span id="stepCounterText" class="text-xs font-bold uppercase tracking-wider text-forest-700">Etapa 1 de 5</span>
+        <span id="stepTitleText" class="text-xs sm:text-sm font-semibold text-slate-600">Dados Pessoais</span>
+      </div>
+      <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden p-0.5">
+        <div id="progressBar" class="bg-gradient-to-r from-forest-500 to-forest-700 h-full rounded-full transition-all duration-500 w-[20%]"></div>
+      </div>
+
+      <!-- Step Indicator Dots -->
+      <div class="flex justify-between mt-3 text-xs font-medium text-slate-500 px-1">
+        <div class="step-dot flex items-center gap-1 text-forest-700 font-bold" id="dot1">
+          <span class="w-5 h-5 rounded-full bg-forest-600 text-white flex items-center justify-center text-[10px]">1</span>
+          <span class="hidden sm:inline">Cadastro</span>
+        </div>
+        <div class="step-dot flex items-center gap-1 opacity-50" id="dot2">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-[10px]">2</span>
+          <span class="hidden sm:inline">Médico</span>
+        </div>
+        <div class="step-dot flex items-center gap-1 opacity-50" id="dot3">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-[10px]">3</span>
+          <span class="hidden sm:inline">Emocional</span>
+        </div>
+        <div class="step-dot flex items-center gap-1 opacity-50" id="dot4">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-[10px]">4</span>
+          <span class="hidden sm:inline">Adesão</span>
+        </div>
+        <div class="step-dot flex items-center gap-1 opacity-50" id="dot5">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-[10px]">5</span>
+          <span class="hidden sm:inline">Cartão</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1: DADOS CADASTRAIS -->
+    <div id="step1" class="step-card active">
+      <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200">
+        <div class="p-2.5 bg-forest-100 text-forest-700 rounded-2xl">
+          <i data-lucide="user" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-forest-900">1. Dados Cadastrais do Associado</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Informações de identificação básica para acolhimento na ASCAPFLOR.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nome Completo *</label>
+          <input type="text" id="inputNome" placeholder="Ex: Maria Clara das Dores Silveira" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">CPF *</label>
+          <input type="text" id="inputCpf" placeholder="000.000.000-00" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Data de Nascimento *</label>
+          <input type="text" id="inputNasc" placeholder="18/05/1984" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Telefone / WhatsApp *</label>
+          <input type="text" id="inputTel" placeholder="(28) 99988-7766" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">E-mail</label>
+          <input type="email" id="inputEmail" placeholder="maria.clara@email.com" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Cidade / UF (Região do Caparaó ou outra)</label>
+          <input type="text" id="inputCidade" placeholder="Alto Caparaó - ES" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: HISTÓRICO MÉDICO -->
+    <div id="step2" class="step-card inactive-right">
+      <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200">
+        <div class="p-2.5 bg-forest-100 text-forest-700 rounded-2xl">
+          <i data-lucide="stethoscope" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-forest-900">2. Histórico Médico e Prescrição</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Acompanhamento e dados da prescrição médica de Cannabis.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Diagnóstico(s) Principal(is) *</label>
+          <input type="text" id="inputDiag" placeholder="Ex: Fibromialgia, Ansiedade Severa e Insônia Crônica" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Médico Prescritor *</label>
+          <input type="text" id="inputMed" placeholder="Dr. Roberto Guimarães" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">CRM / UF *</label>
+          <input type="text" id="inputCrm" placeholder="CRM/ES 12345" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Possui Receita / Laudo Anexo?</label>
+          <select id="selectReceita" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm bg-white">
+            <option value="Sim (Anexado)">Sim (Anexado digitalmente)</option>
+            <option value="Em andamento">Em andamento com médico</option>
+            <option value="Necessita orientação">Necessita de orientação médica</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Via de Administração Preferencial</label>
+          <select id="selectVia" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm bg-white">
+            <option value="Óleo / Extrato sublingual">Óleo / Extrato sublingual (Gotas)</option>
+            <option value="Tópico / Pomada">Tópico / Pomada</option>
+            <option value="Vaporização de Flores">Vaporização de Flores Secas</option>
+            <option value="Tratamento Integrado / Múltiplo">Tratamento Integrado / Múltiplo</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Medicamentos em Uso Contínuo</label>
+          <input type="text" id="inputMeds" placeholder="Ex: Pregabalina 75mg, Zolpidem 10mg" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm">
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: AVALIAÇÃO EMOCIONAL E PSICOSSOCIAL -->
+    <div id="step3" class="step-card inactive-right">
+      <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200">
+        <div class="p-2.5 bg-forest-100 text-forest-700 rounded-2xl">
+          <i data-lucide="heart-pulse" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-forest-900">3. Avaliação Emocional e Psicossocial</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Mapeamento de queixas emocionais e suporte social para acolhimento humano.</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-2">Principais Queixas Emocionais / Sintomas (Marque os aplicáveis):</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-forest-50 cursor-pointer text-xs font-medium transition-all">
+              <input type="checkbox" class="rounded text-forest-600 focus:ring-forest-500">
+              <span>Ansiedade / Agitação</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-forest-50 cursor-pointer text-xs font-medium transition-all">
+              <input type="checkbox" class="rounded text-forest-600 focus:ring-forest-500">
+              <span>Insônia / Má qualidade do sono</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-forest-50 cursor-pointer text-xs font-medium transition-all">
+              <input type="checkbox" class="rounded text-forest-600 focus:ring-forest-500">
+              <span>Dor crônica com desgaste emocional</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-forest-50 cursor-pointer text-xs font-medium transition-all">
+              <input type="checkbox" class="rounded text-forest-600 focus:ring-forest-500">
+              <span>Estresse / Burnout</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-forest-50 cursor-pointer text-xs font-medium transition-all">
+              <input type="checkbox" class="rounded text-forest-600 focus:ring-forest-500">
+              <span>Humor rebaixado / Tristeza</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-forest-50 cursor-pointer text-xs font-medium transition-all">
+              <input type="checkbox" class="rounded text-forest-600 focus:ring-forest-500">
+              <span>Luto ou trauma recente</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Scale 0 to 10 Slider Animation -->
+        <div class="bg-forest-50/70 p-4 rounded-2xl border border-forest-200">
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-bold text-forest-900">Nível de Impacto dos Sintomas na Rotina Diária:</label>
+            <span id="scaleValueText" class="text-sm font-extrabold text-forest-700 bg-white px-3 py-0.5 rounded-full border border-forest-300">0 / 10</span>
+          </div>
+          <input type="range" id="inputImpactSlider" min="0" max="10" value="0" oninput="updateScaleValue(this.value)" class="w-full accent-forest-600 cursor-pointer h-2 bg-slate-200 rounded-lg">
+          <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-medium">
+            <span>0 = Leve / Sem impacto</span>
+            <span>5 = Moderado</span>
+            <span>10 = Severo / Incapacitante</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Acompanhamento Psicológico / Psiquiátrico Ativo?</label>
+            <select id="selectAcomp" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm bg-white">
+              <option value="Sim (Psicologia semanal)">Sim (Acompanhamento psicológico)</option>
+              <option value="Sim (Psiquiatria)">Sim (Acompanhamento psiquiátrico)</option>
+              <option value="Não faz">Não faz acompanhamento no momento</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Rede de Apoio Familiar e Social</label>
+            <select id="selectRede" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-forest-500 focus:outline-none transition-all text-sm bg-white">
+              <option value="Forte / Família Presente">Forte (Família e amigos apoiam)</option>
+              <option value="Moderada">Moderada</option>
+              <option value="Fragilizada / Ausente">Fragilizada / Ausente</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: TERMO DE ADESÃO E ASSINATURA -->
+    <div id="step4" class="step-card inactive-right">
+      <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200">
+        <div class="p-2.5 bg-forest-100 text-forest-700 rounded-2xl">
+          <i data-lucide="file-check-2" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-forest-900">4. Termo de Adesão e Confirmação</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Compromisso associativo de pesquisa e uso terapêutico acompanhado.</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-600 leading-relaxed max-h-36 overflow-y-auto space-y-2">
+          <p><strong>DECLARAÇÃO DE ASSOCIADO(A):</strong> Declaro interesse em ingressar no quadro de associados da <strong>ASCAPFLOR — Associação Social Canábica de Pesquisa Flores do Caparaó</strong>, comprometendo-me a respeitar o estatuto social e utilizar o tratamento canábico exclusivamente para fins medicinais sob orientação profissional.</p>
+          <p>Autorizo o tratamento confidencial dos meus dados cadastrais e de saúde para acompanhamento interno e observatório de dados de saúde da associação.</p>
+        </div>
+
+        <div class="space-y-2">
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" id="checkTermo1" class="mt-1 rounded text-forest-600 focus:ring-forest-500">
+            <span class="text-xs text-slate-700">Declaro que as informações fornecidas nesta ficha de acolhimento são verdadeiras e corretas.</span>
+          </label>
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" id="checkTermo2" class="mt-1 rounded text-forest-600 focus:ring-forest-500">
+            <span class="text-xs text-slate-700">Li e concordo com os termos associativos da ASCAPFLOR para pesquisa e fins terapêuticos.</span>
+          </label>
+        </div>
+
+        <!-- Simulated Digital Signature Pad -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Assinatura Digital do Associado(a)</label>
+          <div class="relative bg-white border border-slate-300 rounded-2xl p-3 h-24 flex items-center justify-center overflow-hidden">
+            <div id="signatureDrawing" class="w-full text-center font-serif text-xl sm:text-2xl italic text-forest-800 tracking-wider transition-all duration-700 opacity-90 transform scale-100">
+              Maria Clara S. Dores
+            </div>
+            <div class="absolute bottom-2 right-3 text-[10px] text-slate-400 flex items-center gap-1">
+              <i data-lucide="shield-check" class="w-3 h-3 text-forest-600"></i>
+              <span>Assinado digitalmente via Hash #ASCAP-2026-984</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: EMISSÃO DO CARTÃO DIGITAL E FINALIZAÇÃO -->
+    <div id="step5" class="step-card inactive-right">
+      <div class="text-center mb-6">
+        <div class="inline-flex p-3 bg-forest-100 text-forest-700 rounded-full mb-2 animate-bounce">
+          <i data-lucide="check-circle-2" class="w-8 h-8 text-forest-600"></i>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-forest-900">Acolhimento Concluído com Sucesso!</h2>
+        <p class="text-xs sm:text-sm text-slate-600 mt-1">O associado foi registrado com sucesso no sistema da ASCAPFLOR Caparaó.</p>
+      </div>
+
+      <!-- DIGITAL ID CARD PREVIEW WITH HOLOGRAM EFFECT -->
+      <div class="max-w-md mx-auto id-card-hologram rounded-3xl p-6 text-white shadow-2xl relative overflow-hidden transform hover:scale-105 transition-all duration-500 border border-forest-400/30">
+        <!-- Botanical Background Pattern overlay -->
+        <div class="absolute -right-10 -bottom-10 opacity-10 text-white pointer-events-none">
+          <i data-lucide="flower-2" class="w-64 h-64"></i>
+        </div>
+
+        <!-- Card Header -->
+        <div class="flex justify-between items-start mb-6 border-b border-forest-400/30 pb-3">
+          <div>
+            <div class="text-[10px] tracking-widest text-forest-200 font-bold uppercase">Associação Canábica</div>
+            <div class="text-lg font-extrabold tracking-wide text-amber-300">ASCAPFLOR</div>
+            <div class="text-[10px] text-emerald-200">Flores do Caparaó - ES</div>
+          </div>
+          <div class="p-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+            <i data-lucide="qr-code" class="w-8 h-8 text-white"></i>
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="grid grid-cols-3 gap-3 items-center mb-6">
+          <div class="col-span-1 flex flex-col items-center">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-forest-700 to-emerald-400 p-0.5 shadow-inner">
+              <div class="w-full h-full bg-forest-900 rounded-[14px] flex items-center justify-center overflow-hidden">
+                <i data-lucide="user-check" class="w-10 h-10 text-emerald-200"></i>
+              </div>
+            </div>
+            <span class="text-[9px] text-amber-300 font-semibold mt-1 bg-forest-900/80 px-2 py-0.5 rounded-full border border-amber-300/30">ATIVO</span>
+          </div>
+
+          <div class="col-span-2 space-y-1">
+            <div class="text-[10px] text-emerald-200/80 uppercase tracking-wider">Nome do Associado</div>
+            <div id="cardNome" class="text-sm font-bold text-white truncate">Maria Clara S. Dores</div>
+            
+            <div class="grid grid-cols-2 gap-1 pt-1">
+              <div>
+                <div class="text-[9px] text-emerald-200/80 uppercase">Matrícula</div>
+                <div id="cardMatricula" class="text-xs font-mono font-bold text-amber-300">ASC-2026-0482</div>
+              </div>
+              <div>
+                <div class="text-[9px] text-emerald-200/80 uppercase">CPF</div>
+                <div id="cardCpf" class="text-xs font-mono text-white">123.456.789-00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="flex justify-between items-center pt-3 border-t border-white/10 text-[10px] text-emerald-200">
+          <div class="flex items-center gap-1">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-300"></i>
+            <span>Uso Medicinal / Acolhimento Aprovado</span>
+          </div>
+          <span class="font-mono text-amber-200/90">Validade: 09/2027</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons on Finish -->
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <button onclick="triggerConfetti()" class="bg-forest-600 hover:bg-forest-700 text-white font-semibold px-4 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+          <span>Comemorar Acolhimento</span>
+        </button>
+        <button onclick="resetWizard()" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-forest-600"></i>
+          <span>Cadastrar Novo Associado</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="submitStatus" role="status" aria-live="polite" class="hidden mb-4 rounded-xl px-4 py-3 text-sm"></div>
+
+    <!-- Navigation Buttons -->
+    <div id="navButtons" class="mt-8 pt-4 border-t border-slate-200 flex justify-between items-center">
+      <button id="btnPrev" onclick="prevStep()" disabled class="bg-slate-100 text-slate-400 font-medium px-4 py-2.5 rounded-xl text-xs sm:text-sm flex items-center gap-2 transition-all cursor-not-allowed">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span>Voltar</span>
+      </button>
+
+      <div class="flex items-center gap-2">
+        <span id="autoStatusBadge" class="hidden text-[11px] font-semibold text-forest-700 bg-forest-100 px-3 py-1 rounded-full animate-pulse flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-forest-600"></span>
+          <span>Modo Demonstração Ativo</span>
+        </span>
+
+        <button id="btnNext" onclick="nextStep()" class="bg-forest-700 hover:bg-forest-800 text-white font-semibold px-5 py-2.5 rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all transform hover:scale-105">
+          <span id="btnNextText">Avançar</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentStep = 1;
+    const totalSteps = 5;
+    let isAutoplay = false;
+    let autoplayTimer = null;
+
+    const stepTitles = [
+      "Dados Pessoais do Associado",
+      "Histórico Médico e Prescrição",
+      "Avaliação Emocional e Psicossocial",
+      "Termo de Adesão e Assinatura",
+      "Cartão Digital do Associado"
+    ];
+
+    // Demo Data for Typing Animation in Autoplay
+    const demoData = {
+      nome: "Maria Clara das Dores Silveira",
+      cpf: "142.857.390-12",
+      nasc: "18/05/1984",
+      tel: "(28) 99988-7766",
+      email: "maria.clara@caparaosaude.org",
+      cidade: "Alto Caparaó - ES",
+      diag: "Fibromialgia, Ansiedade Severa e Insônia Crônica",
+      medico: "Dr. Roberto Guimarães",
+      crm: "CRM/ES 12345",
+      meds: "Pregabalina 75mg, Zolpidem 10mg"
+    };
+
+    function updateScaleValue(val) {
+      document.getElementById('scaleValueText').innerText = val + " / 10";
+    }
+
+    function updateStepUI() {
+      // Update step text and progress bar
+      document.getElementById('stepCounterText').innerText = `Etapa ${currentStep} de ${totalSteps}`;
+      document.getElementById('stepTitleText').innerText = stepTitles[currentStep - 1];
+      
+      const percent = (currentStep / totalSteps) * 100;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+
+      // Update dots
+      for (let i = 1; i <= totalSteps; i++) {
+        const dot = document.getElementById(`dot${i}`);
+        if (i <= currentStep) {
+          dot.classList.remove('opacity-50');
+          dot.classList.add('text-forest-700', 'font-bold');
+          const badge = dot.querySelector('span');
+          badge.classList.remove('bg-slate-300', 'text-slate-700');
+          badge.classList.add('bg-forest-600', 'text-white');
+        } else {
+          dot.classList.add('opacity-50');
+          dot.classList.remove('text-forest-700', 'font-bold');
+          const badge = dot.querySelector('span');
+          badge.classList.add('bg-slate-300', 'text-slate-700');
+          badge.classList.remove('bg-forest-600', 'text-white');
+        }
+      }
+
+      // Show / Hide step cards
+      for (let i = 1; i <= totalSteps; i++) {
+        const card = document.getElementById(`step${i}`);
+        if (i === currentStep) {
+          card.classList.remove('inactive-left', 'inactive-right');
+          card.classList.add('active');
+        } else if (i < currentStep) {
+          card.classList.remove('active', 'inactive-right');
+          card.classList.add('inactive-left');
+        } else {
+          card.classList.remove('active', 'inactive-left');
+          card.classList.add('inactive-right');
+        }
+      }
+
+      // Button States
+      const btnPrev = document.getElementById('btnPrev');
+      const btnNext = document.getElementById('btnNext');
+      const btnNextText = document.getElementById('btnNextText');
+
+      if (currentStep === 1) {
+        btnPrev.disabled = true;
+        btnPrev.className = "bg-slate-100 text-slate-400 font-medium px-4 py-2.5 rounded-xl text-xs sm:text-sm flex items-center gap-2 cursor-not-allowed opacity-60";
+      } else {
+        btnPrev.disabled = false;
+        btnPrev.className = "bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-medium px-4 py-2.5 rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-sm cursor-pointer transition-all";
+      }
+
+      if (currentStep === totalSteps - 1) {
+        btnNextText.innerText = "Finalizar e Emitir Cartão";
+      } else if (currentStep === totalSteps) {
+        btnNext.style.display = "none";
+        triggerConfetti();
+        updateCardData();
+      } else {
+        btnNext.style.display = "flex";
+        btnNextText.innerText = "Avançar";
+      }
+
+      lucide.createIcons();
+    }
+
+    // A Access Key fica no servidor Vercel, nunca neste HTML.
+
+    function getFieldValue(id) {
+      const el = document.getElementById(id);
+      return el ? (el.value || "Não informado") : "Não informado";
+    }
+
+    function setSubmitStatus(message, isError = false) {
+      const status = document.getElementById("submitStatus");
+      status.textContent = message;
+      status.className = "mb-4 rounded-xl px-4 py-3 text-sm " +
+        (isError
+          ? "bg-red-50 text-red-800 border border-red-200"
+          : "bg-forest-50 text-forest-800 border border-forest-200");
+    }
+
+    async function sendCadastroToWeb3Forms() {
+      const nome = getFieldValue("inputNome");
+      const sintomas = Array.from(document.querySelectorAll("#step3 input[type='checkbox']"))
+        .filter(el => el.checked)
+        .map(el => el.closest("label")?.innerText.trim())
+        .filter(Boolean);
+
+      const data = {
+        subject: "Novo cadastro de associado — ASCAPFLOR",
+        from_name: "Formulário ASCAPFLOR",
+        name: nome,
+        email: document.getElementById("inputEmail").value.trim(),
+        message: [
+          "NOVO CADASTRO DE ASSOCIADO — ASCAPFLOR",
+          "",
+          "DADOS PESSOAIS",
+          `Nome: ${nome}`,
+          `CPF: ${getFieldValue("inputCpf")}`,
+          `Data de nascimento: ${getFieldValue("inputNasc")}`,
+          `Telefone/WhatsApp: ${getFieldValue("inputTel")}`,
+          `E-mail: ${getFieldValue("inputEmail")}`,
+          `Cidade/UF: ${getFieldValue("inputCidade")}`,
+          "",
+          "HISTÓRICO MÉDICO E PRESCRIÇÃO",
+          `Diagnóstico(s): ${getFieldValue("inputDiag")}`,
+          `Médico prescritor: ${getFieldValue("inputMed")}`,
+          `CRM/UF: ${getFieldValue("inputCrm")}`,
+          `Receita/laudo: ${getFieldValue("selectReceita")}`,
+          `Via de administração: ${getFieldValue("selectVia")}`,
+          `Medicamentos em uso: ${getFieldValue("inputMeds")}`,
+          "",
+          "AVALIAÇÃO EMOCIONAL E PSICOSSOCIAL",
+          `Queixas/sintomas selecionados: ${sintomas.join(", ") || "Nenhum selecionado"}`,
+          `Impacto dos sintomas: ${getFieldValue("inputImpactSlider")}/10`,
+          `Acompanhamento psicológico/psiquiátrico: ${getFieldValue("selectAcomp")}`,
+          `Rede de apoio: ${getFieldValue("selectRede")}`,
+          "",
+          "TERMO DE ADESÃO",
+          `Declarou informações verdadeiras: ${document.getElementById("checkTermo1").checked ? "Sim" : "Não"}`,
+          `Concordou com os termos: ${document.getElementById("checkTermo2").checked ? "Sim" : "Não"}`,
+          "Observação: a assinatura exibida na página é demonstrativa, não é uma assinatura digital validada."
+        ].join("\n")
+      };
+
+      const button = document.getElementById("btnNext");
+      button.disabled = true;
+      document.getElementById("btnNextText").innerText = "Enviando...";
+      setSubmitStatus("Enviando cadastro. Aguarde...");
+
+      try {
+        const response = await fetch("/api/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Não foi possível enviar o cadastro.");
+        }
+
+        setSubmitStatus("Cadastro enviado por e-mail com sucesso.");
+        return true;
+      } catch (error) {
+        setSubmitStatus(
+          "Não foi possível enviar o cadastro. Verifique a conexão e as variáveis de ambiente da Vercel e tente novamente. " +
+          (error.message || ""),
+          true
+        );
+        return false;
+      } finally {
+        button.disabled = false;
+        document.getElementById("btnNextText").innerText = "Finalizar e Emitir Cartão";
+      }
+    }
+
+    async function nextStep() {
+      if (currentStep === 4 && !isAutoplay) {
+        const requiredFields = [
+          ["inputNome", "Informe o nome completo."],
+          ["inputCpf", "Informe o CPF."],
+          ["inputNasc", "Informe a data de nascimento."],
+          ["inputTel", "Informe o telefone/WhatsApp."],
+          ["inputDiag", "Informe o diagnóstico principal."],
+          ["inputMed", "Informe o médico prescritor."],
+          ["inputCrm", "Informe o CRM/UF."]
+        ];
+        for (const [id, message] of requiredFields) {
+          if (!document.getElementById(id).value.trim()) {
+            setSubmitStatus(message, true);
+            const targetStep = ["inputNome", "inputCpf", "inputNasc", "inputTel"].includes(id) ? 1 : 2;
+            currentStep = targetStep;
+            updateStepUI();
+            document.getElementById(id).focus();
+            return;
+          }
+        }
+
+        if (!document.getElementById("checkTermo1").checked ||
+            !document.getElementById("checkTermo2").checked) {
+          setSubmitStatus("É necessário marcar as duas confirmações do termo antes de finalizar.", true);
+          return;
+        }
+
+        const sent = await sendCadastroToWeb3Forms();
+        if (!sent) return;
+      }
+
+      if (currentStep < totalSteps) {
+        currentStep++;
+        updateStepUI();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        updateStepUI();
+      }
+    }
+
+    function updateCardData() {
+      const nomeVal = document.getElementById('inputNome').value || demoData.nome;
+      const cpfVal = document.getElementById('inputCpf').value || demoData.cpf;
+
+      document.getElementById('cardNome').innerText = nomeVal;
+      document.getElementById('cardCpf').innerText = cpfVal;
+    }
+
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#2D5A27', '#D4AF37', '#23532f', '#ffffff']
+        });
+      }
+    }
+
+    // Helper typing effect for autoplay mode
+    async function typeEffect(elementId, text, speed = 25) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.value = "";
+      for (let i = 0; i < text.length; i++) {
+        el.value += text.charAt(i);
+        await new Promise(r => setTimeout(r, speed));
+      }
+    }
+
+    async function runAutoplayAnimation() {
+      if (!isAutoplay) return;
+
+      // Step 1: Type Personal Data
+      if (currentStep === 1) {
+        await typeEffect('inputNome', demoData.nome, 30);
+        await typeEffect('inputCpf', demoData.cpf, 25);
+        await typeEffect('inputNasc', demoData.nasc, 25);
+        await typeEffect('inputTel', demoData.tel, 25);
+        await typeEffect('inputCidade', demoData.cidade, 25);
+        await new Promise(r => setTimeout(r, 800));
+        if (isAutoplay) nextStep();
+      }
+      
+      // Step 2: Type Medical Data
+      else if (currentStep === 2) {
+        await typeEffect('inputDiag', demoData.diag, 25);
+        await typeEffect('inputMed', demoData.medico, 25);
+        await typeEffect('inputCrm', demoData.crm, 25);
+        await typeEffect('inputMeds', demoData.meds, 25);
+        await new Promise(r => setTimeout(r, 800));
+        if (isAutoplay) nextStep();
+      }
+
+      // Step 3: Animate Emotional Slider
+      else if (currentStep === 3) {
+        const slider = document.getElementById('inputImpactSlider');
+        for (let v = 0; v <= 8; v++) {
+          slider.value = v;
+          updateScaleValue(v);
+          await new Promise(r => setTimeout(r, 100));
+        }
+        await new Promise(r => setTimeout(r, 800));
+        if (isAutoplay) nextStep();
+      }
+
+      // Step 4: Animate Signature
+      else if (currentStep === 4) {
+        const sig = document.getElementById('signatureDrawing');
+        sig.style.opacity = '0';
+        sig.style.transform = 'scale(0.8)';
+        await new Promise(r => setTimeout(r, 300));
+        sig.style.opacity = '1';
+        sig.style.transform = 'scale(1)';
+        await new Promise(r => setTimeout(r, 1200));
+        if (isAutoplay) nextStep();
+      }
+
+      // Step 5: Finalized
+      else if (currentStep === totalSteps) {
+        stopAutoplay();
+      }
+    }
+
+    function toggleAutoplay() {
+      if (isAutoplay) {
+        stopAutoplay();
+      } else {
+        startAutoplay();
+      }
+    }
+
+    function startAutoplay() {
+      isAutoplay = true;
+      document.getElementById('iconPlay').setAttribute('data-lucide', 'pause');
+      document.getElementById('textPlay').innerText = "Pausar Demonstração";
+      document.getElementById('autoStatusBadge').classList.remove('hidden');
+      
+      if (currentStep === totalSteps) {
+        resetWizard();
+      }
+      
+      runAutoplayLoop();
+      lucide.createIcons();
+    }
+
+    function stopAutoplay() {
+      isAutoplay = false;
+      document.getElementById('iconPlay').setAttribute('data-lucide', 'play');
+      document.getElementById('textPlay').innerText = "Iniciar Demonstração Automática";
+      document.getElementById('autoStatusBadge').classList.add('hidden');
+      lucide.createIcons();
+    }
+
+    async function runAutoplayLoop() {
+      while (isAutoplay && currentStep <= totalSteps) {
+        await runAutoplayAnimation();
+      }
+    }
+
+    function resetWizard() {
+      stopAutoplay();
+      currentStep = 1;
+
+      // Clear input fields
+      document.getElementById('inputNome').value = "";
+      document.getElementById('inputCpf').value = "";
+      document.getElementById('inputNasc').value = "";
+      document.getElementById('inputTel').value = "";
+      document.getElementById('inputEmail').value = "";
+      document.getElementById('inputCidade').value = "";
+      document.getElementById('inputDiag').value = "";
+      document.getElementById('inputMed').value = "";
+      document.getElementById('inputCrm').value = "";
+      document.getElementById('inputMeds').value = "";
+
+      updateStepUI();
+    }
+
+    // Initialize Lucide icons on load
+    window.onload = function() {
+      lucide.createIcons();
+      updateStepUI();
+    };
+  </script>
+</body>
+</html>
